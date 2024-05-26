@@ -2,13 +2,14 @@
 
 import { db } from "./db";
 import { auth, clerkClient, currentUser } from "@clerk/nextjs/server";
-import { profileSchema } from "./schemas";
+import { profileSchema, validateWithZodSchema } from "./schemas";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
 // helper fucntion
 const getAuthUser = async () => {
   const user = await currentUser();
+
   if (!user) throw new Error("You must be logged in to access this route");
 
   if (!user.privateMetadata.hasProfile) redirect("/profile/create");
@@ -17,8 +18,6 @@ const getAuthUser = async () => {
 };
 
 const renderError = (error: unknown): { message: string } => {
-  console.log(error);
-
   return {
     message: error instanceof Error ? error.message : "An error occurred",
   };
@@ -35,7 +34,7 @@ export const CreateProfileAction = async (
     if (!user) throw new Error("please login to create a profile");
 
     const rawData = Object.fromEntries(formData);
-    const validatedFields = profileSchema.parse(rawData);
+    const validatedFields = validateWithZodSchema(profileSchema, rawData);
 
     await db.profile.create({
       data: {
@@ -93,24 +92,25 @@ export const updateProfileAction = async (
   const user = await getAuthUser();
   try {
     const rawData = Object.fromEntries(formData);
-    const validatedFields = profileSchema.safeParse(rawData);
-
-    if(!validatedFields.success){
-        const errors = validatedFields.error.errors.map((err)=>err.message)
-        throw new Error(errors.join(','))
-    }
+    const validatedFields = validateWithZodSchema(profileSchema, rawData);
 
     await db.profile.update({
       where: {
         clerkId: user.id,
       },
-      data: validatedFields.data,
+      data: validatedFields,
     });
 
     revalidatePath("/");
     return { message: "Profile updated" };
   } catch (error) {
-    return renderError(error)
+    return renderError(error);
   }
-  
+};
+
+export const updateProfileImageAction = async (
+  prevState: any,
+  formData: FormData
+): Promise<{ message: string }> => {
+  return { message: "Profile image updated successfully" };
 };

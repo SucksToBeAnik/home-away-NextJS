@@ -4,14 +4,20 @@ import { ReloadIcon } from "@radix-ui/react-icons";
 import { useFormStatus } from "react-dom";
 import { Button } from "../ui/button";
 
+
+type BtnSize = "default" | "lg" | "sm"
+
 interface SubmitButtonProps {
   className?: string;
   text?: string;
+  size?: BtnSize
 }
+
 
 export const SubmitButton: React.FC<SubmitButtonProps> = ({
   className = "",
   text = "submit",
+  size = "lg"
 }) => {
   const { pending } = useFormStatus();
 
@@ -20,7 +26,7 @@ export const SubmitButton: React.FC<SubmitButtonProps> = ({
       type="submit"
       disabled={pending}
       className={`capitalize ${className}`}
-      size="lg"
+      size={size}
     >
       {pending ? (
         <>
